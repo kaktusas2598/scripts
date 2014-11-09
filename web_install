@@ -1,0 +1,77 @@
+#!/bin/bash
+
+checkApt() {
+    [ -x "$(which $1)" ]
+}
+
+if checkApt apt-get ; then apt='apt-get'
+elif checkApt yum ; then apt='yum'
+elif checkApt zypper ; then apt='zypper'
+else
+    echo 'No package manager found!'
+    exit 2
+fi
+
+#TODO: selection, detection dependencies(curl)
+
+#----Install Apache----
+read -p "Do You want to install Apache Web Server? " -n 1 -r
+echo    # (optional) move to a new line
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+    sudo $apt install apache2
+fi
+#--------
+
+#----Install Mysql----
+read -p "Do You want to install Mysql Database? " -n 1 -r
+echo    # (optional) move to a new line
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+    sudo $apt install mysql-server libapache2-mod-auth-mysql php5-mysql
+    sudo mysql_install_db
+    sudo /usr/bin/mysql_secure_installation
+fi
+#--------
+
+#----Install PHP----
+read -p "Do You want to install PHP5? " -n 1 -r
+echo    # (optional) move to a new line
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+    sudo $apt install php5 libapache2-mod-php5 php5-mcrypt
+fi
+#--------
+
+#----Install phpmyadmin----
+read -p "Do You want to install PHPMyAdmin? " -n 1 -r
+echo    # (optional) move to a new line
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+    sudo $apt install phpmyadmin apache2-utils
+    echo "Include phpmyadmin config file" | sudo tee -a /etc/apache2/apache2.conf
+    echo "Include /etc/phpmyadmin/apache.conf" | sudo tee -a /etc/apache2/apache2.conf
+fi
+#--------
+
+#Install composer
+read -p "Do You want to install Composer - PHP Dependancy Manager? " -n 1 -r
+echo    # (optional) move to a new line
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+    curl -sS https://getcomposer.org/installer | php
+    sudo mv composer.phar /usr/local/bin/composer
+fi
+#----Laravel 4----
+read -p "Do You want to install Laravel 4 Web Framework? " -n 1 -r
+echo    # (optional) move to a new line
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+    composer global require "laravel/installer=~1.1"
+fi
+#--------
+
+#Restart apache server
+echo -e "\nRestart Apache Web Server for some changes to take effect.\n"
+sudo service apache2 restart
+#Show php modules - apt-cache search php5-
