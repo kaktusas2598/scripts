@@ -1,5 +1,5 @@
-#LAMP stack setup on Arch Linux
 #!/bin/bash
+#LAMP stack setup on Arch Linux
 
 checkApt() {
     [ -x "$(which $1)" ]
