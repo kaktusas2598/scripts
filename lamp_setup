@@ -1,18 +1,6 @@
 #!/bin/bash
 #LAMP stack setup on Arch Linux
 
-checkApt() {
-    [ -x "$(which $1)" ]
-}
-
-if checkApt apt-get ; then apt='apt-get'
-elif checkApt yum ; then apt='yum'
-elif checkApt zypper ; then apt='zypper'
-else
-    echo 'No package manager found!'
-    exit 2
-fi
-
 #TODO: selection, detection dependencies(curl)
 
 #----Install Apache----
@@ -20,7 +8,17 @@ read -p "Do You want to install Apache Web Server? " -n 1 -r
 echo    # (optional) move to a new line
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-    sudo $apt install apache2
+    #Upadte packages
+    sudo pacman -Syu
+    #Install Apache HTTP server
+    sudo pacman -S apache
+    echo -e "\nEdit /etc/httpd/conf.httpd.conf and uncomment unique_id_module.\n"
+    read -rsp $'Press any key to continue...\n' -n1 key
+    echo -e "\nRestarting httpd...\n"
+    sudo systemctl restart httpd
+    echo -e "\nEdit /etc/hosts file for adding aditional hostnames.\n"
+    read -rsp $'Press any key to continue...\n' -n1 key
+    echo -e "\nFeel free to add your web pages to /srv/http/ now!\n"
 fi
 #--------
 
@@ -29,9 +27,10 @@ read -p "Do You want to install Mysql Database? " -n 1 -r
 echo    # (optional) move to a new line
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-    sudo $apt install mysql-server libapache2-mod-auth-mysql php5-mysql
-    sudo mysql_install_db
-    sudo /usr/bin/mysql_secure_installation
+    sudo pacman -S mysql
+    echo -e "\nStarting mysqld...\n"
+    sudo systemctl start mysqld
+    sudo mysql_secure_installation
 fi
 #--------
 
@@ -40,39 +39,24 @@ read -p "Do You want to install PHP5? " -n 1 -r
 echo    # (optional) move to a new line
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-    sudo $apt install php5 libapache2-mod-php5 php5-mcrypt
-fi
-#--------
-
-#----Install phpmyadmin----
-read -p "Do You want to install PHPMyAdmin? " -n 1 -r
-echo    # (optional) move to a new line
-if [[ $REPLY =~ ^[Yy]$ ]]
-then
-    sudo $apt install phpmyadmin apache2-utils
-    echo "Include phpmyadmin config file" | sudo tee -a /etc/apache2/apache2.conf
-    echo "Include /etc/phpmyadmin/apache.conf" | sudo tee -a /etc/apache2/apache2.conf
-fi
-#--------
-
-#Install composer
-read -p "Do You want to install Composer - PHP Dependancy Manager? " -n 1 -r
-echo    # (optional) move to a new line
-if [[ $REPLY =~ ^[Yy]$ ]]
-then
-    curl -sS https://getcomposer.org/installer | php
-    sudo mv composer.phar /usr/local/bin/composer
-fi
-#----Laravel 4----
-read -p "Do You want to install Laravel 4 Web Framework? " -n 1 -r
-echo    # (optional) move to a new line
-if [[ $REPLY =~ ^[Yy]$ ]]
-then
-    composer global require "laravel/installer=~1.1"
+    sudo pacman -S php php-apache
+    echo -e "\nAdd these lines to httpd.conf for php support:\n"
+    echo -e "\n# Use for PHP 5.x:\n"
+    echo -e "\nLoadModule php5_module       modules/libphp5.so\n"
+    echo -e "\nAddHandler php5-script php\n"
+    echo -e "\nInclude conf/extra/php5_module.conf\n"
+    read -rsp $'Press any key to continue...\n' -n1 key
 fi
 #--------
 
 #Restart apache server
-echo -e "\nRestart Apache Web Server for some changes to take effect.\n"
-sudo service apache2 restart
-#Show php modules - apt-cache search php5-
+echo -e "\nRestarting Apache HTTP Server for some changes to take effect.\n"
+sudo systemctl restart httpd
+
+#----Enable LAMP----
+read -p "Do You want to enable LAMP services on startup? " -n 1 -r
+echo    # (optional) move to a new line
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+    sudo systemctl enable httpd mysqld
+fi
